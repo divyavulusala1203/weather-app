@@ -1,8 +1,6 @@
-# weather-app
-A sample project for testing CodePilotAI
 # Weather App
 
-A simple React weather app that looks up a city and displays its current temperature and weather conditions using the Open-Meteo API.
+A simple React app that lets you search for a city and see its current temperature and weather conditions. Weather data comes from Open-Meteo.
 
 ## Run locally
 
