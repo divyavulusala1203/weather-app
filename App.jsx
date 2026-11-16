@@ -21,6 +21,10 @@ function formatForecastDay(dateString) {
   return date.toLocaleDateString(undefined, { weekday: "short" });
 }
 
+function isValidNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 export default function App() {
   const [city, setCity] = useState("");
   const [weather, setWeather] = useState(null);
@@ -87,16 +91,58 @@ export default function App() {
       const current = weatherData.current;
       const daily = weatherData.daily;
 
-      if (!current || !daily?.time) {
-        throw new Error("The weather service returned incomplete weather data.");
+      if (
+        !current ||
+        !isValidNumber(current.temperature_2m) ||
+        !isValidNumber(current.weather_code)
+      ) {
+        throw new Error(
+          "The weather service returned incomplete current conditions.",
+        );
       }
 
-      const forecast = daily.time.slice(1, 6).map((date, index) => ({
-        date,
-        condition: getWeatherDescription(daily.weather_code[index + 1]),
-        maximum: Math.round(daily.temperature_2m_max[index + 1]),
-        minimum: Math.round(daily.temperature_2m_min[index + 1]),
-      }));
+      const hasForecastArrays =
+        Array.isArray(daily?.time) &&
+        Array.isArray(daily?.weather_code) &&
+        Array.isArray(daily?.temperature_2m_max) &&
+        Array.isArray(daily?.temperature_2m_min);
+
+      if (
+        !hasForecastArrays ||
+        daily.time.length < 6 ||
+        daily.weather_code.length < 6 ||
+        daily.temperature_2m_max.length < 6 ||
+        daily.temperature_2m_min.length < 6
+      ) {
+        throw new Error(
+          "The weather service returned incomplete forecast data. Please try again.",
+        );
+      }
+
+      const forecast = daily.time.slice(1, 6).map((date, index) => {
+        const dataIndex = index + 1;
+        const weatherCode = daily.weather_code[dataIndex];
+        const maximum = daily.temperature_2m_max[dataIndex];
+        const minimum = daily.temperature_2m_min[dataIndex];
+
+        if (
+          typeof date !== "string" ||
+          !isValidNumber(weatherCode) ||
+          !isValidNumber(maximum) ||
+          !isValidNumber(minimum)
+        ) {
+          throw new Error(
+            "One of the forecast days has incomplete data. Please try again.",
+          );
+        }
+
+        return {
+          date,
+          condition: getWeatherDescription(weatherCode),
+          maximum: Math.round(maximum),
+          minimum: Math.round(minimum),
+        };
+      });
 
       setWeather({
         city: location.name,
