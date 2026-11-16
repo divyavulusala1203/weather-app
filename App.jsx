@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import WeatherCard from "./WeatherCard";
 
 function getWeatherDescription(code) {
@@ -30,17 +30,32 @@ export default function App() {
   const [weather, setWeather] = useState(null);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const requestControllerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      requestControllerRef.current?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    // Cancel any earlier search before starting or validating this submission.
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
 
     const cityName = city.trim();
 
     if (!cityName) {
       setMessage("Enter a city name.");
       setWeather(null);
+      setIsLoading(false);
       return;
     }
+
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
 
     setIsLoading(true);
     setMessage("");
@@ -55,7 +70,9 @@ export default function App() {
       locationUrl.searchParams.set("language", "en");
       locationUrl.searchParams.set("format", "json");
 
-      const locationResponse = await fetch(locationUrl);
+      const locationResponse = await fetch(locationUrl, {
+        signal: controller.signal,
+      });
 
       if (!locationResponse.ok) {
         throw new Error("Could not search for that city. Please try again.");
@@ -81,7 +98,9 @@ export default function App() {
       weatherUrl.searchParams.set("timezone", "auto");
       weatherUrl.searchParams.set("temperature_unit", "celsius");
 
-      const weatherResponse = await fetch(weatherUrl);
+      const weatherResponse = await fetch(weatherUrl, {
+        signal: controller.signal,
+      });
 
       if (!weatherResponse.ok) {
         throw new Error("Could not load weather data. Please try again.");
@@ -154,13 +173,21 @@ export default function App() {
       });
       setMessage(`Current weather and 5-day forecast for ${location.name}.`);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
       setMessage(
         error instanceof Error
           ? error.message
           : "Something went wrong while loading the weather.",
       );
     } finally {
-      setIsLoading(false);
+      // Only the newest request may turn off the loading state.
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+        setIsLoading(false);
+      }
     }
   }
 
@@ -174,6 +201,9 @@ export default function App() {
           <label htmlFor="city">City</label>
           <input
             id="city"
+            type="text"
+            required
+            autoComplete="off"
             value={city}
             onChange={(event) => setCity(event.target.value)}
             placeholder="e.g. Mumbai"
