@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import WeatherCard from "./WeatherCard";
+import "./App.css";
 
 function getWeatherDescription(code) {
   if (code === 0) return "Clear sky";
@@ -41,7 +42,6 @@ export default function App() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    // Cancel any earlier search before starting or validating this submission.
     requestControllerRef.current?.abort();
     requestControllerRef.current = null;
 
@@ -183,7 +183,6 @@ export default function App() {
           : "Something went wrong while loading the weather.",
       );
     } finally {
-      // Only the newest request may turn off the loading state.
       if (requestControllerRef.current === controller) {
         requestControllerRef.current = null;
         setIsLoading(false);
@@ -192,12 +191,18 @@ export default function App() {
   }
 
   return (
-    <main style={styles.page}>
-      <section style={styles.card}>
+    <main className="weather-page">
+      <section className="weather-app-card">
         <h1>Weather App</h1>
-        <p>Enter a city to see its current weather and 5-day forecast.</p>
+        <p className="app-intro">
+          Enter a city to see its current weather and 5-day forecast.
+        </p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <form
+          className="weather-form"
+          onSubmit={handleSubmit}
+          aria-busy={isLoading}
+        >
           <label htmlFor="city">City</label>
           <input
             id="city"
@@ -207,14 +212,23 @@ export default function App() {
             value={city}
             onChange={(event) => setCity(event.target.value)}
             placeholder="e.g. Mumbai"
-            disabled={isLoading}
           />
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? "Loading..." : "Check weather"}
+          <button type="submit">
+            {isLoading ? "Search another city" : "Check weather"}
           </button>
         </form>
 
-        {message && <p role="status">{message}</p>}
+        {isLoading && (
+          <p className="status-message" role="status">
+            Loading weather…
+          </p>
+        )}
+
+        {message && (
+          <p className="status-message" role="status">
+            {message}
+          </p>
+        )}
 
         {weather && (
           <>
@@ -226,12 +240,12 @@ export default function App() {
               condition={weather.condition}
             />
 
-            <section style={styles.forecast} aria-label="5-day forecast">
+            <section className="forecast-section" aria-label="5-day forecast">
               <h2>5-day forecast</h2>
 
-              <div style={styles.forecastList}>
+              <div className="forecast-list">
                 {weather.forecast.map((day) => (
-                  <article key={day.date} style={styles.forecastDay}>
+                  <article className="forecast-day" key={day.date}>
                     <strong>{formatForecastDay(day.date)}</strong>
                     <span>{day.condition}</span>
                     <span>
@@ -247,41 +261,3 @@ export default function App() {
     </main>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    padding: "24px",
-    fontFamily: "Arial, sans-serif",
-    background: "#eef6ff",
-  },
-  card: {
-    width: "min(100%, 560px)",
-    padding: "32px",
-    borderRadius: "16px",
-    background: "white",
-    boxShadow: "0 8px 30px #17324d22",
-  },
-  form: {
-    display: "grid",
-    gap: "12px",
-  },
-  forecast: {
-    marginTop: "28px",
-  },
-  forecastList: {
-    display: "grid",
-    gap: "10px",
-  },
-  forecastDay: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: "8px",
-    padding: "12px",
-    borderRadius: "10px",
-    background: "#f3f7fc",
-  },
-};
