@@ -146,6 +146,8 @@ export default function App() {
 
       setWeather({
         city: location.name,
+        region: location.admin1 || "",
+        country: location.country || "",
         temperature: Math.round(current.temperature_2m),
         condition: getWeatherDescription(current.weather_code),
         forecast,
@@ -188,6 +190,8 @@ export default function App() {
           <>
             <WeatherCard
               city={weather.city}
+              region={weather.region}
+              country={weather.country}
               temperature={weather.temperature}
               condition={weather.condition}
             />
