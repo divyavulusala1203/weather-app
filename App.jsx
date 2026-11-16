@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import WeatherCard from "./WeatherCard";
-import "./App.css";
 
 function getWeatherDescription(code) {
   if (code === 0) return "Clear sky";
@@ -19,7 +18,7 @@ function getWeatherDescription(code) {
 
 function formatForecastDay(dateString) {
   const date = new Date(`${dateString}T12:00:00`);
-  return date.toLocaleDateString(undefined, { weekday: "short" });
+  return date.toLocaleDateString("en-US", { weekday: "short" });
 }
 
 function isValidNumber(value) {
@@ -171,6 +170,7 @@ export default function App() {
         condition: getWeatherDescription(current.weather_code),
         forecast,
       });
+
       setMessage(`Current weather and 5-day forecast for ${location.name}.`);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
@@ -191,41 +191,31 @@ export default function App() {
   }
 
   return (
-    <main className="weather-page">
-      <section className="weather-app-card">
+    <main className="app-page">
+      <section className="app-card">
         <h1>Weather App</h1>
-        <p className="app-intro">
-          Enter a city to see its current weather and 5-day forecast.
-        </p>
+        <p>Enter a city to see its current weather and 5-day forecast.</p>
 
-        <form
-          className="weather-form"
-          onSubmit={handleSubmit}
-          aria-busy={isLoading}
-        >
+        <form onSubmit={handleSubmit} className="weather-form">
           <label htmlFor="city">City</label>
           <input
             id="city"
             type="text"
             required
+            pattern=".*\S.*"
             autoComplete="off"
             value={city}
             onChange={(event) => setCity(event.target.value)}
             placeholder="e.g. Mumbai"
+            disabled={isLoading}
           />
-          <button type="submit">
-            {isLoading ? "Search another city" : "Check weather"}
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? "Searching…" : "Check weather"}
           </button>
         </form>
 
-        {isLoading && (
-          <p className="status-message" role="status">
-            Loading weather…
-          </p>
-        )}
-
         {message && (
-          <p className="status-message" role="status">
+          <p className="status-message" role="status" aria-live="polite">
             {message}
           </p>
         )}
@@ -240,7 +230,11 @@ export default function App() {
               condition={weather.condition}
             />
 
-            <section className="forecast-section" aria-label="5-day forecast">
+            <section
+              className="forecast-section"
+              aria-label="5-day forecast"
+              aria-busy={isLoading}
+            >
               <h2>5-day forecast</h2>
 
               <div className="forecast-list">
